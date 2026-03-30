@@ -1,6 +1,7 @@
 from pips import Pips
 import json
 import time
+import copy
 
 
 class Tree:
@@ -78,29 +79,41 @@ def tile_placements(grid, n=1):
 
 
 def solve_puzzle(puzzle, placement=None):
-    if len(puzzle.tiles - puzzle.placed_tiles) == 0 and puzzle.is_solved():
-        return puzzle
+    solutions = []
+    # if len(puzzle.tiles - puzzle.placed_tiles) == 0 and puzzle.is_solved():
+    #     return [puzzle.copy()]
 
+    is_base = False
     if placement is None:
+        is_base = True
         placement = tile_placements(Grid(puzzle.shape))
 
     pos = placement.item
-    for tile in puzzle.tiles - puzzle.placed_tiles:
+    for i, tile in enumerate(sorted(puzzle.tiles - puzzle.placed_tiles, key=lambda t: abs(t[0]-t[1])), 1):
         for dir in [(0, 1), (1, 0)]:
             if pos is not None:
                 puzzle.place(tile, (pos[dir[0]], pos[dir[1]]))
             if puzzle.is_solved():
-                return puzzle
+                # return copy.copy(puzzle)
+                solutions += [copy.copy(puzzle)]
 
             if puzzle.is_valid():
                 for child in placement.children:
                     if sol := solve_puzzle(puzzle, placement=child):
-                        return sol
+                        # return sol
+                        solutions += sol
 
             if pos is not None:
                 puzzle.remove((pos[dir[0]], pos[dir[1]]))
 
-    return False
+            if tile[0] == tile[1]:
+                break
+
+        if is_base:
+            print(f'{i:>3} / {len(puzzle.tiles):>3}')
+
+    # return False
+    return list(set(solutions))
 
 
 def desmos_region_helper(width, height, code):
@@ -117,7 +130,7 @@ def desmos_region_helper(width, height, code):
     return [regions[k] for k in sorted(regions.keys())]
 
 
-def load_puzzle(date, difficulty):
+def load_puzzle_old(date, difficulty):
     r_types = ['???', 'equal_to', 'equal', 'not_equal', 'greater_than', 'less_than']
 
     with open('games.json', 'r') as f:
@@ -145,106 +158,28 @@ def load_puzzle(date, difficulty):
         return Pips(shape=shape, tiles=tiles, regions=regions, rules=rules)
 
 
+def load_puzzle(date, difficulty):
+    with open('games.json', 'r') as f:
+        d = json.load(f)[date][difficulty]
+
+        return Pips(
+            shape=d['shape'],
+            tiles=[tuple(t) for t in d['tiles']],
+            regions=[(r['type'], r['value']) for r in d['regions']]
+        )
+
+
 def main():
-    n = -1
-    """# 2026-03-19_medium
-    puzzle = Pips(
-        shape=[
-            [n, n, 1, 1, n, n],
-            [2, 0, 3, 4, n, n],
-            [0, 3, 3, 4, 4, 0],
-            [5, n, n, 6, n, n],
-        ],
-        tiles=[
-            (2, 4),
-            (5, 1),
-            (4, 3),
-            (5, 6),
-            (5, 5),
-            (3, 3),
-            (2, 0),
-        ],
-        regions=[
-            ('greater_than', 9),
-            ('greater_than', 2),
-            ('equal', 0),
-            ('equal', 0),
-            ('less_than', 2),
-            ('less_than', 2),
-        ]
-    )"""
-    # 2025-11-07_hard
-    puzzle = Pips(
-        shape=[
-            [n, n, n, n, 0, n],
-            [1, 1, 1, 2, 2, n],
-            [n, 3, 2, 2, 4, 0],
-            [n, 0, 2, 5, 5, n],
-            [n, 6, 6, n, 5, n],
-            [n, 6, 7, 7, 5, n],
-        ],
-        tiles=[
-            (4, 2),
-            (4, 4),
-            (4, 0),
-            (5, 6),
-            (4, 3),
-            (3, 0),
-            (0, 0),
-            (3, 3),
-            (6, 3),
-            (1, 4),
-            (1, 0),
-        ],
-        regions=[
-            ('equal_to', 12),
-            ('equal', 0),
-            ('equal_to', 2),
-            ('equal_to', 1),
-            ('equal_to', 12),
-            ('equal_to', 12),
-            ('equal_to', 12),
-        ]
-    )
-    """puzzle = Pips(
-        shape=[
-            [0, n, n, n, n],
-            [1, 1, 1, n, n],
-            [n, 0, n, 2, 2],
-            [n, 3, 3, 2, n],
-        ],
-        tiles=[
-            (3, 1),
-            (1, 6),
-            (5, 3),
-            (6, 6),
-            (2, 2),
-        ],
-        regions=[
-            ('equal', 0),
-            ('equal_to', 5),
-            ('equal', 0),
-        ]
-    )"""
-    """puzzle = Pips(
-        shape=[
-            [0, 1],
-            [0, 1],
-        ],
-        tiles=[
-            (1, 6),
-            (3, 6),
-        ],
-        regions=[
-            ('equal', 0)
-        ]
-    )"""
+    puzzle = load_puzzle('2026-03-17', 'hard')
 
     start = time.time()
     sols = solve_puzzle(puzzle)
     end = time.time()
-    print(f'Found {0} solutions in {1000*(end-start):.0f} ms.')
-    print(sols)
+    print(f'Found {len(sols)} solutions in {1000*(end-start):.0f} ms.')
+    for sol in sols:
+        print(sol)
+        print(sol.shape)
+        print()
 
 
 if __name__ == '__main__':

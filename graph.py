@@ -3,7 +3,7 @@ class Graph:
         self.nodes = {}
 
     def from_grid(self, game):
-        grid = [[hash(c) for c in row] for row in game.board]
+        grid = [[c if c is None else hash(c) for c in row] for row in game]
         width, height = len(grid[0]), len(grid)
 
         for j, row in enumerate(grid):
@@ -55,7 +55,7 @@ class Graph:
         history = []
 
         for node in self.nodes:
-            possible[node] = {0, 1, 2, 3}
+            possible[node] = {0, 1, 2, 3, 4}
             filled[node] = False
 
         while len(history) < len(self.nodes):

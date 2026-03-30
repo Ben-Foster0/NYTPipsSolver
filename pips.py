@@ -1,4 +1,5 @@
 from graph import Graph
+import copy
 
 
 class Cell:
@@ -24,6 +25,16 @@ class Cell:
     def __hash__(self):
         return hash(self.piece)
 
+    def __copy__(self):
+        cpy = Cell(self.placeable)
+        cpy.occupied = self.occupied
+        cpy.value = self.value
+        cpy.piece = self.piece
+        return cpy
+
+    def __eq__(self, other):
+        return hash(self) == hash(other)
+
 
 class Region:
     def __init__(self, type, target=None):
@@ -33,20 +44,27 @@ class Region:
 
     def is_valid(self, puzzle):
         values = []
+        blanks = 0
         for cell in self.cells:
             if not puzzle[cell].occupied:
-                return True
+                # return True
+                blanks += 1
+                continue
             values.append(puzzle[cell].value)
 
-        # not using early-exit math yet
+        # exit early if completely empty
+        if blanks == len(self.cells):
+            return True
+
+        # !X! not using early-exit math yet
         if self.type == 'equal_to':
-            return sum(values) == self.target
+            return self.target-6*blanks <= sum(values) <= self.target
         elif self.type == 'equal':
             return len(set(values)) == 1
         elif self.type == 'not_equal':
             return len(set(values)) == len(values)
         elif self.type == 'greater_than':
-            return sum(values) > self.target
+            return sum(values)+6*blanks > self.target
         elif self.type == 'less_than':
             return sum(values) < self.target
         else:
@@ -61,10 +79,16 @@ class Pips:
         self.regions = [Region('true')] + [Region(type, target) for (type, target) in regions]
 
         self.board = [[Cell(placeable=(c >= 0)) for c in row] for row in shape]
-        for j, row in enumerate(self.shape):
-            for i, n in enumerate(row):
-                if n >= 0:
-                    self.regions[n].cells.append((i, j))
+        if regions:
+            for j, row in enumerate(self.shape):
+                for i, n in enumerate(row):
+                    if n >= 0:
+                        self.regions[n].cells.append((i, j))
+
+    def __copy__(self):
+        cpy = Pips(shape=self.shape, tiles=self.tiles, regions=[])
+        cpy.board = copy.deepcopy(self.board)
+        return cpy
 
     def __getitem__(self, item):
         i, j = item
@@ -115,9 +139,10 @@ class Pips:
 
     def __str__(self):
         g = Graph()
-        g.from_grid(self)
+        # g.from_grid(self)
+        g.from_grid([[c.piece if c.occupied else None for c in row] for row in self.board])
         color_ids = g.color_graph()
-        colors = [9, 10, 12, 11]
+        colors = [9, 10, 12, 11, 14]
 
         string = ''
         for j, row in enumerate(self.board):
@@ -131,3 +156,13 @@ class Pips:
                     string += '  '
             string += '\n'
         return string[:-1]
+
+    def __eq__(self, other):
+        for j, row in enumerate(self.board):
+            for i, _ in enumerate(row):
+                if self[i, j] != other[i, j]:
+                    return False
+        return True
+
+    def __hash__(self):
+        return hash(tuple([tuple([c.value for c in row]) for row in self.board]))
