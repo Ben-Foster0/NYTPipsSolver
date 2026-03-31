@@ -42,12 +42,44 @@ class Region:
         self.target = target
         self.cells = []
 
-    def is_valid(self, puzzle):
+    def is_valid(self, puzzle, counts, strong_check):
+        if strong_check:
+            return self.is_valid_strong(puzzle, counts)
+        else:
+            return self.is_valid_weak(puzzle, counts)
+
+    def is_valid_weak(self, puzzle, counts):
         values = []
         blanks = 0
         for cell in self.cells:
             if not puzzle[cell].occupied:
-                # return True
+                blanks += 1
+                continue
+            values.append(puzzle[cell].value)
+
+        # exit early if completely empty
+        if blanks > 0:
+            return True
+
+        # using loose early-exit checks
+        if self.type == 'equal_to':
+            return sum(values) == self.target
+        elif self.type == 'equal':
+            return len(set(values)) == 1
+        elif self.type == 'not_equal':
+            return len(set(values)) == len(values)
+        elif self.type == 'greater_than':
+            return sum(values) > self.target
+        elif self.type == 'less_than':
+            return sum(values) < self.target
+        else:
+            return True
+
+    def is_valid_strong(self, puzzle, counts):
+        values = []
+        blanks = 0
+        for cell in self.cells:
+            if not puzzle[cell].occupied:
                 blanks += 1
                 continue
             values.append(puzzle[cell].value)
@@ -56,11 +88,11 @@ class Region:
         if blanks == len(self.cells):
             return True
 
-        # !X! not using early-exit math yet
+        # using loose early-exit checks
         if self.type == 'equal_to':
             return self.target-6*blanks <= sum(values) <= self.target
         elif self.type == 'equal':
-            return len(set(values)) == 1
+            return len(set(values)) == 1 and counts[values[0]] >= blanks
         elif self.type == 'not_equal':
             return len(set(values)) == len(values)
         elif self.type == 'greater_than':
@@ -72,11 +104,18 @@ class Region:
 
 
 class Pips:
-    def __init__(self, shape, tiles, regions):
+    def __init__(self, shape, tiles, regions, strong_check=True):
         self.shape = shape
         self.tiles = set(tiles)
         self.placed_tiles = set()
         self.regions = [Region('true')] + [Region(type, target) for (type, target) in regions]
+
+        self.counts = [0 for _ in range(0, 7)]
+        for tile in self.tiles:
+            for p in tile:
+                self.counts[p] += 1
+
+        self.strong_check = strong_check
 
         self.board = [[Cell(placeable=(c >= 0)) for c in row] for row in shape]
         if regions:
@@ -94,19 +133,6 @@ class Pips:
         i, j = item
         return self.board[j][i]
 
-    def can_place(self, pos):
-        (i, j), (x, y) = pos
-
-        if j < 0 or j >= len(self.board):
-            return False
-        if i < 0 or i >= len(self.board[j]):
-            return False
-        if y < 0 or y >= len(self.board):
-            return False
-        if x < 0 or x >= len(self.board[y]):
-            return False
-        return self.board[j][i].placeable and self.board[y][x].placeable
-
     def place(self, tile, pos):
         (i, j), (x, y) = pos
 
@@ -114,9 +140,13 @@ class Pips:
         self[x, y].place(tile, 1)
 
         self.placed_tiles.add(tile)
+        for p in tile:
+            self.counts[p] -= 1
 
     def remove(self, pos):
         (i, j), (x, y) = pos
+        for p in self[i, j].piece:
+            self.counts[p] += 1
 
         self.placed_tiles.remove(self[i, j].piece)
 
@@ -125,7 +155,7 @@ class Pips:
 
     def is_valid(self):
         for i, region in enumerate(self.regions, 0):
-            if not region.is_valid(self):
+            if not region.is_valid(self, counts=self.counts, strong_check=self.strong_check):
                 return False
         return True
 
@@ -139,7 +169,6 @@ class Pips:
 
     def __str__(self):
         g = Graph()
-        # g.from_grid(self)
         g.from_grid([[c.piece if c.occupied else None for c in row] for row in self.board])
         color_ids = g.color_graph()
         colors = [9, 10, 12, 11, 14]

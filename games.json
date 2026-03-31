@@ -1258,5 +1258,8 @@
         }
       ]
     }
+  },
+  "2026-03-30": {
+    "hard": {"shape": [[1, 2, 2, 2, 2, 3], [1, -1, -1, -1, -1, 3], [4, -1, 5, 5, -1, 6], [4, -1, -1, -1, -1, 6], [7, -1, 8, 8, -1, 9], [7, -1, 10, 11, -1, 9], [12, 12, 10, 11, 11, 9]], "tiles": [[1, 4], [5, 3], [1, 6], [4, 5], [0, 1], [4, 4], [2, 2], [0, 0], [5, 2], [3, 6], [1, 5], [4, 0], [2, 0], [1, 1]], "regions": [{"type": "greater_than", "value": 8}, {"type": "equal_to", "value": 3}, {"type": "equal_to", "value": 5}, {"type": "equal_to", "value": 2}, {"type": "equal_to", "value": 8}, {"type": "greater_than", "value": 8}, {"type": "equal_to", "value": 9}, {"type": "equal_to", "value": 3}, {"type": "equal", "value": 9}, {"type": "equal_to", "value": 2}, {"type": "equal_to", "value": 0}, {"type": "equal_to", "value": 6}]}
   }
 }
