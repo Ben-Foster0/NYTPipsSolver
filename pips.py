@@ -88,7 +88,6 @@ class Region:
         if blanks == len(self.cells):
             return True
 
-        # using loose early-exit checks
         if self.type == 'equal_to':
             return self.target-6*blanks <= sum(values) <= self.target
         elif self.type == 'equal':

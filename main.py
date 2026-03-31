@@ -78,7 +78,6 @@ def solve_puzzle(puzzle, placement=None):
         placement = tile_placements(to_grid(puzzle.shape))
 
     pos = placement.item
-    # for i, tile in enumerate(sorted(puzzle.tiles - puzzle.placed_tiles, key=lambda t: abs(t[0]-t[1])), 1):
     for i, tile in enumerate(sort_pieces(puzzle.tiles - puzzle.placed_tiles)):
         for dir in [(0, 1), (1, 0)]:
             if pos is not None:
@@ -117,7 +116,27 @@ def load_puzzles():
     return puzzles
 
 
+def time_all_puzzles():
+    puzzles = load_puzzles()
+
+    times = []
+    for name, puzzle in puzzles.items():
+        if 'hard' in name:
+            continue
+        start = time.time()
+        sols = solve_puzzle(puzzle)
+        end = time.time()
+        times.append(1000*(end-start))
+    return times
+
+
 def main():
+    """times = time_all_puzzles()
+    print(min(times))
+    print(sum(times) / len(times))
+    print(max(times))
+
+    return"""
     puzzle = load_puzzles()['2026-03-17-medium']
 
     start = time.time()
@@ -126,7 +145,7 @@ def main():
 
     for sol in sols:
         print(sol)
-        print(sol.shape)
+        # print(sol.shape)
         print()
     print(f'Found {len(sols)} solutions in {1000*(end-start):.0f} ms.')
 
