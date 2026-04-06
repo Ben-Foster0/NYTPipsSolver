@@ -57,7 +57,7 @@ class Region:
                 continue
             values.append(puzzle[cell].value)
 
-        # exit early if completely empty
+        # exit early if contains blank tiles
         if blanks > 0:
             return True
 

@@ -71,7 +71,13 @@ def sort_pieces(tiles):
     return srt
 
 
-def solve_puzzle(puzzle, placement=None):
+MAX_TIME = 60*2.5
+
+
+def solve_puzzle(puzzle, start_time=None, placement=None):
+    if start_time is not None and time.time() - start_time > MAX_TIME:
+        raise Exception('Time limit exceeded')
+
     solutions = []
 
     if placement is None:
@@ -88,7 +94,7 @@ def solve_puzzle(puzzle, placement=None):
 
             if puzzle.is_valid():
                 for child in placement.children:
-                    if sol := solve_puzzle(puzzle, placement=child):
+                    if sol := solve_puzzle(puzzle, start_time, placement=child):
                         solutions += sol
 
             if pos is not None:
@@ -119,31 +125,77 @@ def load_puzzles():
 def time_all_puzzles():
     puzzles = load_puzzles()
 
+    """times = {
+        'tile_count': [],
+        'solution_count': [],
+        'region_min': [],
+        'region_max': [],
+        'region_mean': [],
+        'region_count': [],
+    }
+    for region_type in ['equal_to', 'equal', 'not_equal', 'greater_than', 'less_than']:
+        times[f'{region_type}_ratio'] = []
+    times['time'] = []"""
+
     times = []
-    for name, puzzle in puzzles.items():
-        if 'hard' in name:
+
+    allowed_difficulties = {
+        'easy': True,
+        'medium': True,
+        'hard': False
+    }
+    full_start = time.time()
+    for i, (name, puzzle) in enumerate(puzzles.items()):
+        diff = name.split('-')[-1]
+        if not allowed_difficulties[diff]:
             continue
-        start = time.time()
-        sols = solve_puzzle(puzzle)
-        end = time.time()
+        try:
+            start = time.perf_counter()
+            sols = solve_puzzle(puzzle, time.time())
+            end = time.perf_counter()
+        except Exception as e:
+            print(f'Time limit exceeded.')
+            times.append(-1)
+            continue
+
+        region_sizes = [len(r.cells) for r in puzzle.regions]
+        equal_ratio = len([0 for r in puzzle.regions if r.type == 'equal'])
+
+        """times['tile_count'].append(len(puzzle.tiles))
+        times['solution_count'].append(len(sols))
+        times['region_min'].append(min(region_sizes))
+        times['region_max'].append(max(region_sizes))
+        times['region_mean'].append(sum(region_sizes) / len(region_sizes))
+        times['region_count'].append(len(region_sizes))
+        for region_type in ['equal_to', 'equal', 'not_equal', 'greater_than', 'less_than']:
+            times[f'{region_type}_ratio'].append(sum([1 for r in puzzle.regions if r.type == region_type]) / len(puzzle.regions))
+
+        times['time'].append(1000*(end-start))"""
+
         times.append(1000*(end-start))
+
+        progress = (i+1) / len(puzzles)
+        elapsed = time.time() - full_start
+        print(f'{i:>3}/{len(puzzles):>3} - {elapsed / progress - elapsed:>.2f} seconds remaining.')
     return times
 
 
 def main():
     """times = time_all_puzzles()
-    print(min(times))
-    print(sum(times) / len(times))
-    print(max(times))
+    print(times)
+
+    # print(sorted(times, key=lambda t: t[0], reverse=True))
 
     return"""
     puzzle = load_puzzles()['2026-03-17-medium']
+    print(sort_pieces(puzzle.tiles))
 
     start = time.time()
     sols = solve_puzzle(puzzle)
     end = time.time()
 
-    for sol in sols:
+    for i, sol in enumerate(sols, 1):
+        print(f'{i}:')
         print(sol)
         # print(sol.shape)
         print()
