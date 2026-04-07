@@ -49,6 +49,9 @@ class Region:
             return self.is_valid_weak(puzzle, counts)
 
     def is_valid_weak(self, puzzle, counts):
+        """
+        Simple heuristic, regions with blank cells are always considered to be valid
+        """
         values = []
         blanks = 0
         for cell in self.cells:
@@ -76,6 +79,9 @@ class Region:
             return True
 
     def is_valid_strong(self, puzzle, counts):
+        """
+        Improved heuristic, considers "best-case" for blank cells
+        """
         values = []
         blanks = 0
         for cell in self.cells:

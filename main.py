@@ -26,6 +26,7 @@ def to_grid(shape):
 def tile_placements(grid, n=1):
     x, y = 0, 0
     w, h = len(grid[0]), len(grid)
+    # find next available cell
     while grid[y][x] != 0:
         x += 1
         if x >= w:
@@ -67,15 +68,12 @@ def sort_pieces(tiles):
             srt.append(t)
 
     tiles = set(tiles) - set(srt)
-    srt += sorted(tiles, key=lambda e: max(e))
+    srt += list(tiles)
     return srt
 
 
-MAX_TIME = 60*2.5
-
-
-def solve_puzzle(puzzle, start_time=None, placement=None):
-    if start_time is not None and time.time() - start_time > MAX_TIME:
+def solve_puzzle(puzzle, max_time=None, placement=None):
+    if max_time is not None and time.time() > max_time:
         raise Exception('Time limit exceeded')
 
     solutions = []
@@ -94,7 +92,7 @@ def solve_puzzle(puzzle, start_time=None, placement=None):
 
             if puzzle.is_valid():
                 for child in placement.children:
-                    if sol := solve_puzzle(puzzle, start_time, placement=child):
+                    if sol := solve_puzzle(puzzle, max_time=max_time, placement=child):
                         solutions += sol
 
             if pos is not None:
@@ -106,7 +104,7 @@ def solve_puzzle(puzzle, start_time=None, placement=None):
     return list(set(solutions))
 
 
-def load_puzzles():
+def load_puzzles(strong_check=True):
     puzzles = {}
     with open('games.json', 'r') as f:
         d = json.load(f)
@@ -116,61 +114,37 @@ def load_puzzles():
                     shape=v['shape'],
                     tiles=[tuple(t) for t in v['tiles']],
                     regions=[(r['type'], r['value']) for r in v['regions']],
-                    strong_check=True
+                    strong_check=strong_check
                 )
                 puzzles[f'{date}-{diff}'] = p
     return puzzles
 
 
-def time_all_puzzles():
+def time_all_puzzles(time_limit, difficulties):
+    """
+    Function to check the solving time for each puzzle
+    Used to create statistics for CS4795 presentation & report
+
+    :param time_limit: maximum time elapsed solving a puzzle before skipping
+    :param difficulties: the difficulties to be included in the output
+    :return: list of puzzle runtimes in ms
+    """
     puzzles = load_puzzles()
 
-    """times = {
-        'tile_count': [],
-        'solution_count': [],
-        'region_min': [],
-        'region_max': [],
-        'region_mean': [],
-        'region_count': [],
-    }
-    for region_type in ['equal_to', 'equal', 'not_equal', 'greater_than', 'less_than']:
-        times[f'{region_type}_ratio'] = []
-    times['time'] = []"""
-
     times = []
-
-    allowed_difficulties = {
-        'easy': True,
-        'medium': True,
-        'hard': False
-    }
     full_start = time.time()
     for i, (name, puzzle) in enumerate(puzzles.items()):
-        diff = name.split('-')[-1]
-        if not allowed_difficulties[diff]:
+        if not difficulties[name.split('-')[-1]]:
             continue
+
         try:
             start = time.perf_counter()
-            sols = solve_puzzle(puzzle, time.time())
+            sols = solve_puzzle(puzzle, time.time()+time_limit)
             end = time.perf_counter()
         except Exception as e:
             print(f'Time limit exceeded.')
             times.append(-1)
             continue
-
-        region_sizes = [len(r.cells) for r in puzzle.regions]
-        equal_ratio = len([0 for r in puzzle.regions if r.type == 'equal'])
-
-        """times['tile_count'].append(len(puzzle.tiles))
-        times['solution_count'].append(len(sols))
-        times['region_min'].append(min(region_sizes))
-        times['region_max'].append(max(region_sizes))
-        times['region_mean'].append(sum(region_sizes) / len(region_sizes))
-        times['region_count'].append(len(region_sizes))
-        for region_type in ['equal_to', 'equal', 'not_equal', 'greater_than', 'less_than']:
-            times[f'{region_type}_ratio'].append(sum([1 for r in puzzle.regions if r.type == region_type]) / len(puzzle.regions))
-
-        times['time'].append(1000*(end-start))"""
 
         times.append(1000*(end-start))
 
@@ -181,24 +155,16 @@ def time_all_puzzles():
 
 
 def main():
-    """times = time_all_puzzles()
-    print(times)
+    # print(time_all_puzzles(60*2.5, {'easy': True, 'medium': False, 'hard': False}))
 
-    # print(sorted(times, key=lambda t: t[0], reverse=True))
+    puzzle = load_puzzles(strong_check=True)['2026-03-17-medium']
 
-    return"""
-    puzzle = load_puzzles()['2026-03-17-medium']
-    print(sort_pieces(puzzle.tiles))
-
-    start = time.time()
+    start = time.perf_counter()
     sols = solve_puzzle(puzzle)
-    end = time.time()
+    end = time.perf_counter()
 
     for i, sol in enumerate(sols, 1):
-        print(f'{i}:')
-        print(sol)
-        # print(sol.shape)
-        print()
+        print(sol, end='\n\n')
     print(f'Found {len(sols)} solutions in {1000*(end-start):.0f} ms.')
 
 

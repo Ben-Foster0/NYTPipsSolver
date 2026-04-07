@@ -1,4 +1,5 @@
 class Graph:
+    """ This is only used to color the dominoes in the string representation of a Pips puzzle"""
     def __init__(self):
         self.nodes = {}
 
@@ -63,9 +64,7 @@ class Graph:
             if len(possible[node]) == 0:
                 break
 
-            # possible[node] = {random.choice(list(possible[node]))}
             possible[node] = {list(possible[node])[0]}
-            # possible[node] = {list(possible[node])[node % len(possible[node])]}
             for other in self.nodes[node]:
                 possible[other] -= possible[node]
 
