@@ -99,7 +99,7 @@ class Region:
         elif self.type == 'equal':
             return len(set(values)) == 1 and counts[values[0]] >= blanks
         elif self.type == 'not_equal':
-            return len(set(values)) == len(values)
+            return len(set(values)) == len(values) and len([c for c in counts if c > 0]) >= blanks
         elif self.type == 'greater_than':
             return sum(values)+6*blanks > self.target
         elif self.type == 'less_than':

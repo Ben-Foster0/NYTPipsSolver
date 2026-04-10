@@ -157,7 +157,7 @@ def time_all_puzzles(time_limit, difficulties):
 def main():
     # print(time_all_puzzles(60*2.5, {'easy': True, 'medium': False, 'hard': False}))
 
-    puzzle = load_puzzles(strong_check=True)['2026-03-17-medium']
+    puzzle = load_puzzles(strong_check=True)['2026-04-10-hard']
 
     start = time.perf_counter()
     sols = solve_puzzle(puzzle)
